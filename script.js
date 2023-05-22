@@ -1,11 +1,8 @@
 (function () {
     const errorDiv = watchErrors();
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    const minBpm = 30;
-    const initialBpm = readBpm();
+    const maxPeriodSecs = 10;
 
-    updatePage(initialBpm);
-    
     if (isBrowserSupported()) {
         return main();
     }
@@ -14,43 +11,44 @@
     }
 
     function main() {
-        // Give context time to transition to "running" state (Firefox).
-        // Else we'll assume that we need a touch event and begin stopped.
         const context = new AudioContext();
-        setUpKeyboard();
         setTimeout(begin, 500);
 
         function begin() {
-            const canAutoplay = context.state == "running";
-            var bpm = initialBpm;
-            var buffer = createBuffer(context);
-            var source = canAutoplay ? start() : null;
+            var source = null;
+            var timer = null;
+            var currentPeriodSecs = 5;
 
-            setUpLinks(onClickLink);
             attachButton(onStartStopClick);
             updateButton(source);
             return;
 
-            function onClickLink(updateBpm) {
-                bpm = Math.max(minBpm, updateBpm(bpm));
-                setSourceLoop(source, bpm);
-                updatePage(bpm);
-            }
-
             function start() {
                 stop();
-                source = createSource(context, buffer);
-                setSourceLoop(source, bpm);
-                source.start();
-                return source;
+                nextNote();
             }
 
             function stop() {
+                if (timer) clearTimeout(timer);
                 if (source) {
                     source.stop();
                     source = null;
                 }
             }
+
+            function nextNote() {
+                if (source) {
+                    source.stop()
+                }
+
+                const notes = [60, 61, 62]
+                const note = notes[Math.floor(Math.random() * notes.length)];
+                console.log(note);
+                source = playNote(note, context);
+
+                timer = setTimeout(nextNote, currentPeriodSecs*1000);
+            }
+
         
             function onStartStopClick() {
                 if (context.state != "running") {
@@ -65,65 +63,19 @@
         }
     }
 
+    function playNote(midiNote, context) {
+        source = context.createBufferSource();
+        source.connect(context.destination);
+        source.buffer = createBuffer(context, midiNote);
+        source.start();
+        return source;
+    }
+
     function attachButton(onClick) {
         const button = document.getElementById("start-stop");
         button.onclick = onClick;
     }
 
-    function setUpLinks(onClickLink) {
-        const addLinks = Array.from(document.getElementById("add-links").children);
-        addLinks.forEach(function (a) {
-            a.onclick = function () {
-                const delta = parseInt(a.innerText)
-                onClickLink(function(bpm) {
-                    return bpm + delta;
-                });
-            };
-        });
-        const timesLinks = Array.from(document.getElementById("times-links").children);
-        timesLinks.forEach(function (a) {
-            const op = a.innerText.substring(0,1);
-            const num = parseInt(a.innerText.substring(1));
-            const factor = op === "÷" ? 1 / num : num;
-            a.onclick = function () {
-                onClickLink(function(bpm) {
-                    return Math.round(bpm * factor);
-                });
-            };
-        });
-    }
-
-    function setUpKeyboard() {
-        const [...shortcutElements] = document.body.querySelectorAll("[data-shortcut]");
-        const keyMap = shortcutElements.reduce(function (km, element) {
-            const key = element.getAttribute("data-shortcut");
-            km[key.toUpperCase()] = element;
-            return km;
-        }, {});
-
-        document.body.onkeyup = function(event) {
-            const element = keyMap[event.key.toUpperCase()]; 
-            if (element) {
-                element.click();
-                element.className += " clicking";
-                setTimeout(function () {
-                    element.className = element.className.replace(" clicking", "");
-                }, 150);
-            }
-        }
-    }
-
-    function setSourceLoop(source, bpm) {
-        if (source) {
-            source.loopEnd = 60 / bpm;
-        }
-    }
-
-    function updatePage(bpm) {
-        document.getElementById("title").innerText = bpm; 
-        document.title = document.title.replace(/\d+/, bpm);
-        history.replaceState({}, document.title.replace(/\d+/, bpm), "?bpm="+bpm);
-    }
 
     function updateButton(source) {
         const button = document.getElementById("start-stop");
@@ -131,31 +83,34 @@
         button.className = source ? "stop" : "start";
     }
 
-    function createSource(context, buffer) {
-        const source = context.createBufferSource();
-        source.loop = true;
-        source.buffer = buffer;
-        source.connect(context.destination);
-        return source;
-    }
-
-    function createBuffer(context) {
+    function createBuffer(context, midiNote) {
         const sr = context.sampleRate;
-        const maxBeatSecs = 60 / minBpm;
-        const bufferSamps = Math.round(sr * maxBeatSecs);
+        const bufferSamps = Math.round(sr * maxPeriodSecs);
         const buffer = context.createBuffer(1, bufferSamps, sr);
-        writeClick(buffer.getChannelData(0), sr);
+        writeNote(buffer.getChannelData(0), sr, midiNote);
         return buffer;
     }
 
-    function writeClick(data, sr) {
+    function writeNote(data, sr, midiNote) {
         // Cosine blend from sharp 1 down to zero, based on clickToneFreq.
-        const clickToneFreq = 1000; // Hz
-        const clickSamps = sr * 0.5 / clickToneFreq;
+        const toneFreq = midiNoteToFreq(midiNote);
+        const periodSec = 1/toneFreq;
+        const w = 2*Math.PI/periodSec;
+        const clickSamps = sr * maxPeriodSecs;
         for (var i = 0; i < clickSamps; i++) {
             const tSec = i / sr;
-            data[i] = 0.5 * (1 + Math.cos(2 * Math.PI * clickToneFreq * tSec));
+            const amplitude = 0.05/(tSec+0.05);
+            const a = 2*amplitude/Math.PI;
+            const saw = a * Math.asin(Math.sin(w*tSec))
+            data[i] = saw;
         }
+    }
+
+    function midiNoteToFreq(midiNote) {
+        const a4hz = 440.0;
+        const a4midi = 69;
+        const semitones = midiNote - a4midi;
+        return a4hz * Math.pow(2.0, semitones / 12.0);
     }
 
     function readBpm() {
