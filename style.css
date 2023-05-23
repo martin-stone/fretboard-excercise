@@ -13,24 +13,6 @@ footer p {
     margin-bottom: 2em;
 }
 
-.bpm-links a,
-.bpm-links a:visited {
-  display: inline-block;
-  width: 2em;
-  padding: 0.5em;
-  margin: 0 0.25em;
-  font-weight: bold;
-  color: black;
-  border: 2px solid gray;
-  border-radius: 0.5em;
-  text-decoration: none;
-}
-
-.bpm-links a:hover,
-.bpm-links a:active {
-  border-color: black;
-}
-
 button {
   color: white;
   background: darkgreen;
@@ -63,19 +45,22 @@ a.clicking {
 table {
   border: none;
   margin: 0 auto;
-  text-align: right;
+  text-align: left;
 }
 
-tr:nth-child(odd) td:first-child {
-  font-weight: bold;
-  font-size: 110%
+td,th {
+  padding: 0.1em 0.2em;
+  font-weight: normal;
 }
-
-td {
-  padding: 0.2em 0.5em;
+th {
+    text-align: right;
 }
 
 footer {
   padding-top: 1em;
   font-size: 70%;
+}
+
+input[type=number] {
+    width: 3em;
 }
