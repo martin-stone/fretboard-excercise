@@ -17,6 +17,7 @@
         function begin() {
             var source = null;
             var timer = null;
+            const pickNextNote = noteGen();
 
             attachButton(onStartStopClick);
             updateButton(source);
@@ -43,7 +44,7 @@
                     source.stop()
                 }
 
-                const [noteNum, noteName, stringNum] = pickNote(options);
+                const [noteNum, noteName, stringNum] = pickNextNote(options);
                 console.log(noteName);
                 document.getElementById("title").innerText = noteName;
                 source = playNote(noteNum, context);
@@ -65,19 +66,33 @@
         }
     }
 
-    function pickNote(options) {
-        const midiC1 = 24;
+    function noteGen() {
+        const midiC0 = 12;
         const notes = "C2D4EF1G3A5B";
-        const inote = randInt(0, 12);
-        var noteStr = notes.charAt(inote);
-        const sharpIndex = Number(noteStr);
-        if (!isNaN(sharpIndex)) {
-            const goSharp = randInt(1, 7) > sharpIndex;
-            // no need to wrap cos B/C have nothing between:
-            noteStr = notes[inote + (goSharp?-1:1)] + "♭♯".charAt(goSharp);
+        const subscripts = "₀₁₂₃₄₅₆₇₈₉";
+        var inote = 0;
+
+        function pickNextNote(options) {
+            // Don't repeat last note: inc by [1,12)
+            inote = (inote + randInt(1, 12)) % 12;
+            const ioctave = randInt(4, 7);
+            var noteStr = notes.charAt(inote);
+            const sharpIndex = Number(notes.charAt(inote));
+            if (!isNaN(sharpIndex)) {
+                const goSharp = randInt(1, 7) > sharpIndex;
+                // no need to wrap cos B/C have nothing between:
+                noteStr = notes.charAt(inote + (goSharp?-1:1)) + "♭♯".charAt(goSharp);
+            }
+            return [
+                midiC0 + ioctave*12 + inote, 
+                noteStr + subscripts.charAt(ioctave), 
+                0
+                ];
         }
-        return [60, noteStr, 0];
+
+        return pickNextNote;
     }
+
 
     function randInt(min, maxExcl) {
         return Math.floor(Math.random() * (maxExcl - min) + min);
