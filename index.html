@@ -13,15 +13,16 @@
 </head>
 
 <body>
-    <h1 id="title">-</h1>
+    <h1 id="note">-</h1>
+    <h2 id="hint">&nbsp;</h2>
 
     <button id="start-stop" autofocus data-shortcut="S">Start</button>
 
     <table id="options">
         <tr><th><input type="number" id="periodSecs"></th><td><label for="periodSecs">Seconds between notes</label></td></tr>
-        <tr><th><input type="number" id="maxFret" min="0" max="11" value="12" width="2"></th><td><label for="maxFret">Highest fret</label></td></tr>
+        <tr><th><input type="number" id="maxFret" min="5" max="12" value="12" width="2"></th><td><label for="maxFret">Highest fret</label></td></tr>
         <tr><th><input type="checkbox" id="stringHint" checked></th><td><label for="stringHint">String hint</label></td></tr>
-        <tr><th><input type="checkbox" id="sharpsFlats" checked></th><td><label for="sharpsFlats">Include sharps and flats</label></td></tr>
+        <!-- <tr><th><input type="checkbox" id="sharpsFlats" checked></th><td><label for="sharpsFlats">Include sharps and flats</label></td></tr> -->
     </table>
     <footer>
         <p>
