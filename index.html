@@ -19,9 +19,33 @@
     <button id="start-stop" autofocus data-shortcut="S">Start</button>
 
     <table id="options">
-        <tr><th><input type="number" id="periodSecs"></th><td><label for="periodSecs">Seconds between notes</label></td></tr>
-        <tr><th><input type="number" id="maxFret" min="5" max="12" value="12" width="2"></th><td><label for="maxFret">Highest fret</label></td></tr>
-        <tr><th><input type="checkbox" id="stringHint" checked></th><td><label for="stringHint">String hint</label></td></tr>
+        <tr>
+            <th><input type="number" id="periodSecs"></th>
+            <td><label for="periodSecs">Seconds between notes</label></td>
+        </tr>
+        <tr>
+            <th>
+                <label for="string_1">1</label><input type="checkbox" class="stringCheck" id="string_1" checked>
+                <label for="string_2">2</label><input type="checkbox" class="stringCheck" id="string_2" checked>
+                <label for="string_3">3</label><input type="checkbox" class="stringCheck" id="string_3" checked>
+                <label for="string_4">4</label><input type="checkbox" class="stringCheck" id="string_4" checked>
+                <label for="string_5">5</label><input type="checkbox" class="stringCheck" id="string_5" checked>
+                <label for="string_6">6</label><input type="checkbox" class="stringCheck" id="string_6" checked>
+            </th>
+            <td>Strings</td>
+        </tr>
+        <tr>
+            <th><input type="number" id="minFret" min="0" max="24" value="0" width="2"></th>
+            <td><label for="minFret">Lowest fret</label></td>
+        </tr>
+        <tr>
+            <th><input type="number" id="maxFret" min="0" max="24" value="12" width="2"></th>
+            <td><label for="maxFret">Highest fret</label></td>
+        </tr>
+        <tr>
+            <th><input type="checkbox" id="stringHint" checked></th>
+            <td><label for="stringHint">Show string hint</label></td>
+        </tr>
         <!-- <tr><th><input type="checkbox" id="sharpsFlats" checked></th><td><label for="sharpsFlats">Include sharps and flats</label></td></tr> -->
     </table>
     <footer>

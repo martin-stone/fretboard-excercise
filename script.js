@@ -12,6 +12,7 @@
 
     function main() {
         const context = new AudioContext();
+        initUi();
         setTimeout(begin, 500);
 
         function begin() {
@@ -43,10 +44,10 @@
                     source.stop()
                 }
 
-                const [noteNum, noteName, stringNums] = pickNextNote(options);
-                console.log(noteNum, noteName, stringNums);
+                const [noteNum, noteName, string] = pickNextNote(options);
+                console.log(noteNum, noteName, string);
                 document.getElementById("note").innerText = noteName;
-                document.getElementById("hint").innerText = options.stringHint ? `(string ${stringNums.join(", ")})` : "\u00A0";
+                document.getElementById("hint").innerText = options.stringHint ? `(string ${string+1})` : "\u00A0";
                 source = playNote(noteNum, context);
 
                 timer = setTimeout(nextNote, options.periodSecs*1000);
@@ -70,20 +71,35 @@
         const notes = "C2D4EF1G3A5B";
         const subscripts = "₀₁₂₃₄₅₆₇₈₉";
         const stringNotes = [64, 59, 55, 50, 45, 40]; // from string 1 .. 6
-        const minNote = stringNotes[5];
 
-        var currentNote = minNote;
+        var currentNote;
 
         function pickNextNote(options) {
-            const noteRange = stringNotes[0] + options.maxFret - minNote;
-            // Don't repeat last note: inc by rand(1, note range-1) and wrap.
-            currentNote = (currentNote - minNote + randInt(1, noteRange)) % noteRange + minNote;
-            
+            const [nextNote, string] = differentRandomNote();
+            currentNote = nextNote;
+
             return [
                 currentNote, 
                 nameFor(currentNote), 
-                stringsFor(currentNote, options)
+                string
             ];
+
+            function differentRandomNote() {
+                const degenerate = options.minFret == options.maxFret && options.strings.length <= 1;
+                while (true) {
+                    const [nextNote, string, fret] = randomNote();
+                    if (nextNote != currentNote || degenerate) {
+                        currentNote = nextNote;
+                        return [nextNote, string];
+                    }
+                }
+            }
+
+            function randomNote() {
+                const fret = randInt(options.minFret, options.maxFret+1);
+                const string = randChoice(options.strings);
+                return [stringNotes[string] + fret, string];
+            }
         }
 
         function nameFor(midiNote) {
@@ -100,14 +116,6 @@
             return noteStr + subscripts.charAt(ioct);
         }
 
-        function stringsFor(midiNote, options) {
-            console.log(options.maxFret);
-            return stringNotes
-                .map((n, i) => [n <= midiNote && midiNote <= n+options.maxFret, i+1])
-                .filter(pair => pair[0])
-                .map(pair => pair[1]);
-        }
-
         return pickNextNote;
     }
 
@@ -115,13 +123,23 @@
     function randInt(min, maxExcl) {
         return Math.floor(Math.random() * (maxExcl - min) + min);
     }
+    
+    function randChoice(array) {
+        return array[randInt(0, array.length)];
+    }
 
     function getOptions() {
         const inputs = [...document.querySelectorAll('table input')];
-        const fromForm = Object.fromEntries(inputs.map(input => [
-            input.id, input.hasAttribute("checked") ? input.checked : parseInt(input.value)
+        const options = Object.fromEntries(inputs.map(input => [
+            input.id, input.hasAttribute("checked") 
+                ? input.checked 
+                : Math.max(0, parseInt(input.value))
         ]));
-        return fromForm;
+        options.strings = Object.entries(options)
+            .map(([k, v]) => (k.startsWith("string_") && v) ? parseInt(k.charAt("string_".length))-1 : undefined)
+            .filter(i => i !== undefined)
+        console.log(options);
+        return options;
     }
 
     function playNote(midiNote, context) {
@@ -172,9 +190,23 @@
         return a4hz * Math.pow(2.0, semitones / 12.0);
     }
 
-    function readBpm() {
-        const match = /bpm=(\d+)/gi.exec(document.location.search);
-        return match ? Math.max(minBpm, parseInt(match[1])) : 120;
+    function initUi() {
+        // Keep min/max values below/above each other
+        document.getElementById("minFret").addEventListener('change', constrain(maxFret, (a,b) => a < b), false);
+        document.getElementById("maxFret").addEventListener('change', constrain(minFret, (a,b) => a > b), false);
+
+        function constrain(dependentElement, condition) {
+            return function(event) {
+                const changedElement = event.target;
+                const changedValue = parseInt(changedElement.value);
+                const targetValue = parseInt(dependentElement.value);
+                if (condition(targetValue, changedValue)) {
+                    dependentElement.value = changedValue;
+                }
+            }
+        }
+
+        console.log(getOptions())
     }
 
     function isBrowserSupported() {
