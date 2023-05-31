@@ -45,7 +45,6 @@
                 }
 
                 const [noteNum, noteName, string] = pickNextNote(options);
-                console.log(noteNum, noteName, string);
                 document.getElementById("note").innerText = noteName;
                 document.getElementById("hint").innerText = options.stringHint ? `(string ${string+1})` : "\u00A0";
                 source = playNote(noteNum, context);
@@ -85,19 +84,28 @@
             ];
 
             function differentRandomNote() {
-                const degenerate = options.minFret == options.maxFret && options.strings.length <= 1;
+                var nextNote, string;
+                var attempt = 0;
                 while (true) {
-                    const [nextNote, string, fret] = randomNote();
-                    if (nextNote != currentNote || degenerate) {
-                        currentNote = nextNote;
-                        return [nextNote, string];
+                    [nextNote, string] = randomNote();
+                    const isAllowed = options.sharpsFlats || isNaturalNote(nextNote);
+                    if (isAllowed && nextNote != currentNote) {
+                        break;
                     }
+                    else if (attempt > 10 && nextNote == currentNote) {
+                        break; // accept current note before...
+                    }
+                    else if (attempt > 20) {
+                        break; // ... accept disallowed note
+                    }
+                    ++attempt;
                 }
+                return [nextNote, string];
             }
 
             function randomNote() {
                 const fret = randInt(options.minFret, options.maxFret+1);
-                const string = randChoice(options.strings);
+                const string = randChoice(options.strings) || 0;
                 return [stringNotes[string] + fret, string];
             }
         }
@@ -114,6 +122,12 @@
                 noteStr = notes.charAt(inote + (goSharp?-1:1)) + "♭♯".charAt(goSharp);
             }
             return noteStr + subscripts.charAt(ioct);
+        }
+
+        function isNaturalNote(midiNote) {
+            var inote = midiNote % 12;
+            const sharpIndex = parseInt(notes.charAt(inote));
+            return isNaN(sharpIndex);
         }
 
         return pickNextNote;
@@ -138,7 +152,6 @@
         options.strings = Object.entries(options)
             .map(([k, v]) => (k.startsWith("string_") && v) ? parseInt(k.charAt("string_".length))-1 : undefined)
             .filter(i => i !== undefined)
-        console.log(options);
         return options;
     }
 
@@ -205,8 +218,6 @@
                 }
             }
         }
-
-        console.log(getOptions())
     }
 
     function isBrowserSupported() {
